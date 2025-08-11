@@ -1,0 +1,42 @@
+//@taquito22
+//@version=5
+strategy("RSI + MA Strategy", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// Inputs for RSI and Moving Average settings
+rsi_length = input.int(14, title="RSI Length")
+rsi_overbought = input.int(70, title="RSI Overbought Level")
+rsi_oversold = input.int(30, title="RSI Oversold Level")
+ma_length = input.int(50, title="Moving Average Length")
+
+// Calculating RSI and Moving Average
+rsi = ta.rsi(close, rsi_length)
+ma = ta.sma(close, ma_length)
+
+// Entry conditions
+long_condition = (rsi < rsi_oversold and close > ma) or ta.crossover(close, ma)
+short_condition = (rsi > rsi_overbought and close < ma) or ta.crossunder(close, ma)
+
+// Exit conditions
+long_exit = ta.crossunder(rsi, 50) or ta.crossunder(close, ma)
+short_exit = ta.crossover(rsi, 50) or ta.crossover(close, ma)
+
+// Execute trades
+if (long_condition)
+    strategy.entry("Long", strategy.long)
+if (short_condition)
+    strategy.entry("Short", strategy.short)
+
+if (long_exit)
+    strategy.close("Long")
+if (short_exit)
+    strategy.close("Short")
+
+// Risk management inputs
+stop_loss_perc = input.float(2.0, title="Stop Loss (%)")
+take_profit_perc = input.float(4.0, title="Take Profit (%)")
+
+// Calculating stop loss and take profit levels
+if (strategy.position_size > 0)
+    strategy.exit("Take Profit/Stop Loss", "Long", stop=close * (1 - stop_loss_perc / 100), limit=close * (1 + take_profit_perc / 100))
+if (strategy.position_size < 0)
+    strategy.exit("Take Profit/Stop Loss", "Short", stop=close * (1 + stop_loss_perc / 100), limit=close * (1 - take_profit_perc / 100))
